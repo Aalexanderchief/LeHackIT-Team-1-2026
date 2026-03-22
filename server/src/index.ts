@@ -48,23 +48,36 @@ udpWorker.on("message", (event: WorkerEvent) => {
     telemetry.onPacket();
     packetCount += 1;
 
-    // Phase 2 normalization path from normalized stick domain [-1..1] to XInput range.
-    const normalized = {
+    const normalizedLeft = {
       x: event.payload.x / 1000,
       y: event.payload.y / 1000
     };
+    const normalizedRight = {
+      x: event.payload.rx / 1000,
+      y: event.payload.ry / 1000
+    };
 
     const now = Date.now();
-    const hasInput = event.payload.x !== 0 || event.payload.y !== 0;
+    const hasInput =
+      event.payload.x !== 0 ||
+      event.payload.y !== 0 ||
+      event.payload.rx !== 0 ||
+      event.payload.ry !== 0;
     if (packetCount <= 5 || hasInput || now - lastInputLogAt >= 1500) {
       console.info(
-        `[input] #${packetCount} from=${event.remote} raw=(${event.payload.x},${event.payload.y}) norm=(${normalized.x.toFixed(3)},${normalized.y.toFixed(3)})`
+        `[input] #${packetCount} from=${event.remote} rawL=(${event.payload.x},${event.payload.y}) rawR=(${event.payload.rx},${event.payload.ry}) normL=(${normalizedLeft.x.toFixed(3)},${normalizedLeft.y.toFixed(3)}) normR=(${normalizedRight.x.toFixed(3)},${normalizedRight.y.toFixed(3)})`
       );
       lastInputLogAt = now;
     }
 
-    const axes = normalizeToXInput(normalized);
-    bridge.updateAxes(axes);
+    const leftAxes = normalizeToXInput(normalizedLeft);
+    const rightAxes = normalizeToXInput(normalizedRight);
+    bridge.updateAxes({
+      lx: leftAxes.lx,
+      ly: leftAxes.ly,
+      rx: rightAxes.lx,
+      ry: rightAxes.ly
+    });
   }
 });
 

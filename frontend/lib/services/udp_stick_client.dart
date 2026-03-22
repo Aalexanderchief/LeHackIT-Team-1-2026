@@ -21,12 +21,14 @@ class UdpStickClient {
   Future<void> sendStickMove({
     required int x,
     required int y,
+    required int rx,
+    required int ry,
   }) async {
     if (!await _ensureReady()) {
       return;
     }
 
-    final payload = _encodeStickMove(x: x, y: y);
+    final payload = _encodeStickMove(x: x, y: y, rx: rx, ry: ry);
     _socket!.send(payload, _address!, _port);
   }
 
@@ -66,12 +68,21 @@ class UdpStickClient {
     }
   }
 
-  List<int> _encodeStickMove({required int x, required int y}) {
+  List<int> _encodeStickMove({
+    required int x,
+    required int y,
+    required int rx,
+    required int ry,
+  }) {
     return <int>[
       0x08,
       ..._encodeInt32Varint(x),
       0x10,
       ..._encodeInt32Varint(y),
+      0x18,
+      ..._encodeInt32Varint(rx),
+      0x20,
+      ..._encodeInt32Varint(ry),
     ];
   }
 

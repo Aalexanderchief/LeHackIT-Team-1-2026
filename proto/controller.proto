@@ -6,4 +6,6 @@ package lehackit.controller;
 message StickMove {
   int32 x = 1;
   int32 y = 2;
+  int32 rx = 3;
+  int32 ry = 4;
 }

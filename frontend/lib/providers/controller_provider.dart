@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/foundation.dart';
 import 'package:game_controller/models/controller_state.dart';
 import 'package:game_controller/services/udp_stick_client.dart';
@@ -22,12 +24,12 @@ class ControllerProvider extends ChangeNotifier {
 
   /// Update left stick position
   void updateLeftStick(double x, double y) {
+    final clamped = _clampStick(x, y, _state.leftStick.maxDistance);
     _state = _state.copyWith(
-      leftStick: _state.leftStick.copyWith(x: x, y: y),
+      leftStick: _state.leftStick.copyWith(x: clamped.$1, y: clamped.$2),
     );
 
-    final (normX, normY) = _state.leftStick.getNormalized();
-    _sendLeftStick(normX, normY);
+    _sendSticks();
 
     ControllerLogger.logStickMove('LEFT', x, y);
     notifyListeners();
@@ -35,9 +37,11 @@ class ControllerProvider extends ChangeNotifier {
 
   /// Update right stick position
   void updateRightStick(double x, double y) {
+    final clamped = _clampStick(x, y, _state.rightStick.maxDistance);
     _state = _state.copyWith(
-      rightStick: _state.rightStick.copyWith(x: x, y: y),
+      rightStick: _state.rightStick.copyWith(x: clamped.$1, y: clamped.$2),
     );
+    _sendSticks();
     ControllerLogger.logStickMove('RIGHT', x, y);
     notifyListeners();
   }
@@ -63,7 +67,7 @@ class ControllerProvider extends ChangeNotifier {
   /// Reset all inputs
   void reset() {
     _state = ControllerState.initial();
-    _sendLeftStick(0, 0);
+    _sendSticks();
     ControllerLogger.logReset();
     notifyListeners();
   }
@@ -74,11 +78,32 @@ class ControllerProvider extends ChangeNotifier {
     super.dispose();
   }
 
-  Future<void> _sendLeftStick(double x, double y) async {
-    final scaledX = (x * 1000).round().clamp(-1000, 1000);
-    final scaledY = (y * 1000).round().clamp(-1000, 1000);
+  Future<void> _sendSticks() async {
+    final left = _state.leftStick.getNormalized();
+    final right = _state.rightStick.getNormalized();
 
-    await _udpClient.sendStickMove(x: scaledX, y: scaledY);
+    final scaledLeftX = (left.$1 * 1000).round().clamp(-1000, 1000);
+    final scaledLeftY = (left.$2 * 1000).round().clamp(-1000, 1000);
+    final scaledRightX = (right.$1 * 1000).round().clamp(-1000, 1000);
+    final scaledRightY = (right.$2 * 1000).round().clamp(-1000, 1000);
+
+    await _udpClient.sendStickMove(
+      x: scaledLeftX,
+      y: scaledLeftY,
+      rx: scaledRightX,
+      ry: scaledRightY,
+    );
+  }
+
+  (double, double) _clampStick(double x, double y, double maxDistance) {
+    final squaredDistance = (x * x) + (y * y);
+    if (squaredDistance <= maxDistance * maxDistance) {
+      return (x, y);
+    }
+
+    final magnitude = math.sqrt(squaredDistance);
+    final scale = maxDistance / magnitude;
+    return (x * scale, y * scale);
   }
 
   /// Helper method to update button state

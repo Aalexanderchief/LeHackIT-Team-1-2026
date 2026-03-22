@@ -93,7 +93,7 @@ describe("udp worker", () => {
 
     expect(packet.type).toBe("PACKET");
     if (packet.type === "PACKET") {
-      expect(packet.payload).toEqual({ x: 123, y: -456 });
+      expect(packet.payload).toEqual({ x: 123, y: -456, rx: 0, ry: 0 });
       expect(packet.remote.startsWith("127.0.0.1:")).toBe(true);
     }
   });

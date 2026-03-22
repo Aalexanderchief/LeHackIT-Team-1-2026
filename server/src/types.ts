@@ -1,6 +1,8 @@
 export type StickMove = {
   x: number;
   y: number;
+  rx: number;
+  ry: number;
 };
 
 export type StickVector = {
@@ -8,9 +10,16 @@ export type StickVector = {
   y: number;
 };
 
+export type XInputStickAxes = {
+  lx: number;
+  ly: number;
+};
+
 export type XInputAxes = {
   lx: number;
   ly: number;
+  rx: number;
+  ry: number;
 };
 
 export type WorkerEvent =

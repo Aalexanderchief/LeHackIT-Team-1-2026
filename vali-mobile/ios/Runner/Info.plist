@@ -66,5 +66,9 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>We need this to translate your voice into game commands.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>We need microphone access to hear your commands.</string>
 </dict>
 </plist>

@@ -4,11 +4,27 @@ venv/
 env/
 .venv/
 .dart_tool/
+.pub-cache/
+.pub/
+.flutter-plugins
+.flutter-plugins-dependencies
 
 # Build outputs
 dist/
 build/
 *.egg-info/
+coverage/
+
+# Flutter generated files
+**/ios/Flutter/.last_build_id
+**/ios/Flutter/Flutter.podspec
+**/ios/Pods/
+**/ios/.symlinks/
+**/macos/Pods/
+**/macos/.symlinks/
+**/macos/Flutter/ephemeral/
+**/linux/flutter/ephemeral/
+**/windows/flutter/ephemeral/
 
 # IDE
 .vscode/
@@ -24,11 +40,20 @@ Thumbs.db
 # Environment
 .env
 .env.local
+.env.*.local
 
 # Logs
 *.log
 npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
 
 # Temporary files
 *.tmp
 .cache/
+
+# Misc
+*.pid
+*.seed
+*.pid.lock

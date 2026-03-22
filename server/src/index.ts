@@ -2,11 +2,9 @@ import path from "node:path";
 import { Worker } from "node:worker_threads";
 import { FocusHookBridge } from "./focusHook";
 import { startMdnsAdvertiser } from "./mdnsAdvertiser";
-import { normalizeToXInput } from "./normalization";
 import { Telemetry } from "./telemetry";
 import type { WorkerEvent } from "./types";
 import { ViGEmBridge } from "./vigemBridge";
-import { startWiredAutoStart } from "./wiredAutoStart";
 
 const UDP_PORT = Number(process.env.UDP_PORT ?? 55555);
 
@@ -15,7 +13,6 @@ bridge.connect();
 
 const telemetry = new Telemetry();
 const stopMdns = startMdnsAdvertiser(UDP_PORT);
-const stopWiredAutoStart = startWiredAutoStart({ udpPort: UDP_PORT });
 const focusHook = new FocusHookBridge();
 let packetCount = 0;
 let lastInputLogAt = 0;
@@ -50,23 +47,38 @@ udpWorker.on("message", (event: WorkerEvent) => {
     telemetry.onPacket();
     packetCount += 1;
 
-    // Phase 2 normalization path from normalized stick domain [-1..1] to XInput range.
-    const normalized = {
-      x: event.payload.x / 1000,
-      y: event.payload.y / 1000
-    };
-
     const now = Date.now();
-    const hasInput = event.payload.x !== 0 || event.payload.y !== 0;
+    const hasInput =
+      event.payload.lx !== 0 ||
+      event.payload.ly !== 0 ||
+      event.payload.rx !== 0 ||
+      event.payload.ry !== 0 ||
+      event.payload.leftTrigger !== 0 ||
+      event.payload.rightTrigger !== 0 ||
+      event.payload.a ||
+      event.payload.b ||
+      event.payload.x ||
+      event.payload.y ||
+      event.payload.start ||
+      event.payload.back ||
+      event.payload.leftShoulder ||
+      event.payload.rightShoulder ||
+      event.payload.leftThumb ||
+      event.payload.rightThumb ||
+      event.payload.guide ||
+      event.payload.dpadUp ||
+      event.payload.dpadDown ||
+      event.payload.dpadLeft ||
+      event.payload.dpadRight;
+
     if (packetCount <= 5 || hasInput || now - lastInputLogAt >= 1500) {
       console.info(
-        `[input] #${packetCount} from=${event.remote} raw=(${event.payload.x},${event.payload.y}) norm=(${normalized.x.toFixed(3)},${normalized.y.toFixed(3)})`
+        `[input] #${packetCount} from=${event.remote} sticks=(${event.payload.lx.toFixed(3)},${event.payload.ly.toFixed(3)})/(${event.payload.rx.toFixed(3)},${event.payload.ry.toFixed(3)}) trig=(${event.payload.leftTrigger.toFixed(2)},${event.payload.rightTrigger.toFixed(2)}) buttons=a:${event.payload.a ? 1 : 0} b:${event.payload.b ? 1 : 0} x:${event.payload.x ? 1 : 0} y:${event.payload.y ? 1 : 0}`
       );
       lastInputLogAt = now;
     }
 
-    const axes = normalizeToXInput(normalized);
-    bridge.updateAxes(axes);
+    bridge.updateInput(event.payload);
   }
 });
 
@@ -88,7 +100,6 @@ setInterval(() => {
 function shutdown(signal: string): void {
   console.info(`[app] shutting down due to ${signal}`);
   stopMdns();
-  stopWiredAutoStart();
   bridge.disconnect();
   udpWorker.terminate().finally(() => process.exit(0));
 }

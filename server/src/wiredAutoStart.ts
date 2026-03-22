@@ -14,6 +14,11 @@ const DEFAULT_OPTIONS: WiredBridgeOptions = {
   pollIntervalMs: Number(process.env.ADB_POLL_MS ?? 3000)
 };
 
+function reverseSpecForAdb(port: number): string {
+  // ADB reverse supports tcp/local socket specs, not udp.
+  return `tcp:${port}`;
+}
+
 function resolveAdbBinary(): string {
   const explicit = process.env.ADB_PATH;
   if (explicit && existsSync(explicit)) {
@@ -70,16 +75,18 @@ export function startWiredAutoStart(
   let lastKnownDeviceIds = new Set<string>();
 
   const ensureForDevice = (deviceId: string): void => {
+    const reverseSpec = reverseSpecForAdb(config.udpPort);
+
     try {
       runAdb(adbBinary, [
         "-s",
         deviceId,
         "reverse",
-        `udp:${config.udpPort}`,
-        `udp:${config.udpPort}`
+        reverseSpec,
+        reverseSpec
       ]);
       console.info(
-        `[wired] reverse ready for ${deviceId} udp:${config.udpPort} -> host`
+        `[wired] reverse ready for ${deviceId} ${reverseSpec} -> host`
       );
     } catch (error) {
       console.warn(
@@ -87,7 +94,6 @@ export function startWiredAutoStart(
           error instanceof Error ? error.message : "unknown"
         }`
       );
-      return;
     }
 
     try {

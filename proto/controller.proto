@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+package lehackit.controller;
+
+// Leanest control payload for a single stick update.
+message StickMove {
+  int32 x = 1;
+  int32 y = 2;
+}

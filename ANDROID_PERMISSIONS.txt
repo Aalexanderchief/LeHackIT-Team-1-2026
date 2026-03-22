@@ -1,0 +1,7 @@
+<!-- Android manifest permissions for LeHackIT -->
+<!-- Add this inside <manifest> tag in android/app/src/main/AndroidManifest.xml -->
+
+<uses-permission android:name="android.permission.INTERNET" />
+<uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+<uses-permission android:name="android.permission.CHANGE_NETWORK_STATE" />
+<uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" /> <!-- For mDNS on Android 12+ -->

@@ -142,12 +142,19 @@ class _ControllerScreenState extends State<ControllerScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // Connection Section
                 _buildConnectionSection(context, controllerService),
                 const SizedBox(height: 24),
+
+                // Status Section
                 _buildStatusSection(controllerService),
                 const SizedBox(height: 24),
+
+                // Mode Selection
                 _buildModeSection(),
                 const SizedBox(height: 24),
+
+                // Input Display
                 if (!_useGyroscope && !_useAccelerometer)
                   _buildJoystickSection()
                 else

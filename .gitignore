@@ -107,3 +107,14 @@ docker-compose.override.yml
 .vscode/settings.json
 .vscode/launch.json
 .vscode/extensions.json
+
+node_modules/
+server/node_modules/
+server/dist/
+mobile/.dart_tool/
+mobile/.packages
+mobile/build/
+mobile/.flutter-plugins
+mobile/.flutter-plugins-dependencies
+mobile/.metadata
+*.log

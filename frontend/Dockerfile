@@ -47,7 +47,8 @@ RUN git clone https://github.com/flutter/flutter.git -b stable $FLUTTER_HOME
 RUN git config --global --add safe.directory $FLUTTER_HOME
 
 # Rulăm flutter doctor pentru a verifica mediul și a descărca Dart
-RUN flutter doctor --android-licenses && flutter doctor
+RUN flutter --suppress-analytics doctor --android-licenses && \
+    flutter --suppress-analytics doctor
 
 # Setăm directorul de lucru
 WORKDIR /app
@@ -56,8 +57,9 @@ WORKDIR /app
 COPY . .
 
 # Autoriza Flutter sa ruleze ca root in Docker și instaleaza dependente
-RUN flutter config --enable-web --no-analytics && \
-    flutter pub get
+RUN test -f pubspec.yaml && \
+    flutter --suppress-analytics config --enable-web --no-analytics && \
+    flutter --suppress-analytics pub get
 
 # Comanda implicită - rămâne în container pentru development
 CMD ["/bin/bash"]

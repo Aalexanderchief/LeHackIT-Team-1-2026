@@ -111,6 +111,7 @@ docker-compose.override.yml
 node_modules/
 server/node_modules/
 server/dist/
+server/coverage/
 mobile/.dart_tool/
 mobile/.packages
 mobile/build/

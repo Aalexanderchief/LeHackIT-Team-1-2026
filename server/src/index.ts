@@ -6,6 +6,7 @@ import { normalizeToXInput } from "./normalization";
 import { Telemetry } from "./telemetry";
 import type { WorkerEvent } from "./types";
 import { ViGEmBridge } from "./vigemBridge";
+import { startWiredAutoStart } from "./wiredAutoStart";
 
 const UDP_PORT = Number(process.env.UDP_PORT ?? 55555);
 
@@ -14,6 +15,7 @@ bridge.connect();
 
 const telemetry = new Telemetry();
 const stopMdns = startMdnsAdvertiser(UDP_PORT);
+const stopWiredAutoStart = startWiredAutoStart({ udpPort: UDP_PORT });
 const focusHook = new FocusHookBridge();
 let packetCount = 0;
 let lastInputLogAt = 0;
@@ -48,36 +50,23 @@ udpWorker.on("message", (event: WorkerEvent) => {
     telemetry.onPacket();
     packetCount += 1;
 
-    const normalizedLeft = {
+    // Phase 2 normalization path from normalized stick domain [-1..1] to XInput range.
+    const normalized = {
       x: event.payload.x / 1000,
       y: event.payload.y / 1000
     };
-    const normalizedRight = {
-      x: event.payload.rx / 1000,
-      y: event.payload.ry / 1000
-    };
 
     const now = Date.now();
-    const hasInput =
-      event.payload.x !== 0 ||
-      event.payload.y !== 0 ||
-      event.payload.rx !== 0 ||
-      event.payload.ry !== 0;
+    const hasInput = event.payload.x !== 0 || event.payload.y !== 0;
     if (packetCount <= 5 || hasInput || now - lastInputLogAt >= 1500) {
       console.info(
-        `[input] #${packetCount} from=${event.remote} rawL=(${event.payload.x},${event.payload.y}) rawR=(${event.payload.rx},${event.payload.ry}) normL=(${normalizedLeft.x.toFixed(3)},${normalizedLeft.y.toFixed(3)}) normR=(${normalizedRight.x.toFixed(3)},${normalizedRight.y.toFixed(3)})`
+        `[input] #${packetCount} from=${event.remote} raw=(${event.payload.x},${event.payload.y}) norm=(${normalized.x.toFixed(3)},${normalized.y.toFixed(3)})`
       );
       lastInputLogAt = now;
     }
 
-    const leftAxes = normalizeToXInput(normalizedLeft);
-    const rightAxes = normalizeToXInput(normalizedRight);
-    bridge.updateAxes({
-      lx: leftAxes.lx,
-      ly: leftAxes.ly,
-      rx: rightAxes.lx,
-      ry: rightAxes.ly
-    });
+    const axes = normalizeToXInput(normalized);
+    bridge.updateAxes(axes);
   }
 });
 
@@ -99,6 +88,7 @@ setInterval(() => {
 function shutdown(signal: string): void {
   console.info(`[app] shutting down due to ${signal}`);
   stopMdns();
+  stopWiredAutoStart();
   bridge.disconnect();
   udpWorker.terminate().finally(() => process.exit(0));
 }

@@ -93,8 +93,102 @@ describe("udp worker", () => {
 
     expect(packet.type).toBe("PACKET");
     if (packet.type === "PACKET") {
-      expect(packet.payload).toEqual({ x: 123, y: -456, rx: 0, ry: 0 });
+      expect(packet.payload).toMatchObject({
+        lx: 0.123,
+        ly: -0.456,
+        rx: 0,
+        ry: 0,
+        leftTrigger: 0,
+        rightTrigger: 0,
+        a: false,
+        b: false,
+        x: false,
+        y: false,
+        start: false,
+        back: false,
+        leftShoulder: false,
+        rightShoulder: false,
+        leftThumb: false,
+        rightThumb: false,
+        guide: false,
+        dpadUp: false,
+        dpadDown: false,
+        dpadLeft: false,
+        dpadRight: false
+      });
       expect(packet.remote.startsWith("127.0.0.1:")).toBe(true);
+    }
+  });
+
+  it("emits PACKET for JSON full-state payload", async () => {
+    const port = 56003;
+    const workerPath = path.resolve(__dirname, "../dist/udpWorker.js");
+
+    worker = new Worker(workerPath, { workerData: { port } });
+    await waitForEvent({ worker }, (event) => event.type === "READY");
+
+    const payload = Buffer.from(
+      JSON.stringify({
+        type: "INPUT_STATE",
+        lx: 0.25,
+        ly: -0.5,
+        rx: -0.75,
+        ry: 0.1,
+        lt: 1,
+        rt: 0.4,
+        buttons: {
+          a: true,
+          b: false,
+          x: true,
+          y: false,
+          start: true,
+          back: true,
+          leftShoulder: true,
+          rightShoulder: false,
+          leftThumb: false,
+          rightThumb: true,
+          guide: false,
+          dpadUp: true,
+          dpadDown: false,
+          dpadLeft: true,
+          dpadRight: false
+        }
+      }),
+      "utf8"
+    );
+
+    socket!.send(payload, port, "127.0.0.1");
+
+    const packet = await waitForEvent(
+      { worker },
+      (event) => event.type === "PACKET"
+    );
+
+    expect(packet.type).toBe("PACKET");
+    if (packet.type === "PACKET") {
+      expect(packet.payload).toMatchObject({
+        lx: 0.25,
+        ly: -0.5,
+        rx: -0.75,
+        ry: 0.1,
+        leftTrigger: 1,
+        rightTrigger: 0.4,
+        a: true,
+        b: false,
+        x: true,
+        y: false,
+        start: true,
+        back: true,
+        leftShoulder: true,
+        rightShoulder: false,
+        leftThumb: false,
+        rightThumb: true,
+        guide: false,
+        dpadUp: true,
+        dpadDown: false,
+        dpadLeft: true,
+        dpadRight: false
+      });
     }
   });
 
@@ -106,7 +200,7 @@ describe("udp worker", () => {
 
     await waitForEvent({ worker }, (event) => event.type === "READY");
 
-    socket!.send(Buffer.from([0xff, 0x00, 0xfe]), port, "127.0.0.1");
+    socket!.send(Buffer.from([0x08, 0x80]), port, "127.0.0.1");
 
     const errorEvent = await waitForEvent(
       { worker },

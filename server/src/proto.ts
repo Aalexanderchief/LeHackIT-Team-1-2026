@@ -28,8 +28,6 @@ export async function decodeStickMove(buffer: Buffer): Promise<StickMove> {
 
   return {
     x: object.x ?? 0,
-    y: object.y ?? 0,
-    rx: object.rx ?? 0,
-    ry: object.ry ?? 0
+    y: object.y ?? 0
   };
 }

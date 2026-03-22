@@ -42,8 +42,6 @@ export class ViGEmBridge {
     try {
       this.gamepad.axis.leftX.setValue(axes.lx);
       this.gamepad.axis.leftY.setValue(axes.ly);
-      this.gamepad.axis.rightX.setValue(axes.rx);
-      this.gamepad.axis.rightY.setValue(axes.ry);
       this.gamepad.update();
     } catch (error) {
       console.error("[vigem] axis update failed", error);

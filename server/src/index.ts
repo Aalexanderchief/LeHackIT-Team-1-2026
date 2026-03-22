@@ -6,7 +6,6 @@ import { normalizeToXInput } from "./normalization";
 import { Telemetry } from "./telemetry";
 import type { WorkerEvent } from "./types";
 import { ViGEmBridge } from "./vigemBridge";
-import { startWiredAutoStart } from "./wiredAutoStart";
 
 const UDP_PORT = Number(process.env.UDP_PORT ?? 55555);
 
@@ -15,7 +14,6 @@ bridge.connect();
 
 const telemetry = new Telemetry();
 const stopMdns = startMdnsAdvertiser(UDP_PORT);
-const stopWiredAutoStart = startWiredAutoStart({ udpPort: UDP_PORT });
 const focusHook = new FocusHookBridge();
 let packetCount = 0;
 let lastInputLogAt = 0;
@@ -88,7 +86,6 @@ setInterval(() => {
 function shutdown(signal: string): void {
   console.info(`[app] shutting down due to ${signal}`);
   stopMdns();
-  stopWiredAutoStart();
   bridge.disconnect();
   udpWorker.terminate().finally(() => process.exit(0));
 }

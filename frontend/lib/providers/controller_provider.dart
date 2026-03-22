@@ -1,10 +1,12 @@
 import 'package:flutter/foundation.dart';
 import 'package:game_controller/models/controller_state.dart';
+import 'package:game_controller/services/udp_stick_client.dart';
 import 'package:game_controller/utils/controller_logger.dart';
 
 /// Provider that manages the state of the game controller
 class ControllerProvider extends ChangeNotifier {
   ControllerState _state = ControllerState.initial();
+  final UdpStickClient _udpClient = UdpStickClient();
 
   ControllerState get state => _state;
 
@@ -23,6 +25,10 @@ class ControllerProvider extends ChangeNotifier {
     _state = _state.copyWith(
       leftStick: _state.leftStick.copyWith(x: x, y: y),
     );
+
+    final (normX, normY) = _state.leftStick.getNormalized();
+    _sendLeftStick(normX, normY);
+
     ControllerLogger.logStickMove('LEFT', x, y);
     notifyListeners();
   }
@@ -57,8 +63,22 @@ class ControllerProvider extends ChangeNotifier {
   /// Reset all inputs
   void reset() {
     _state = ControllerState.initial();
+    _sendLeftStick(0, 0);
     ControllerLogger.logReset();
     notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    _udpClient.dispose();
+    super.dispose();
+  }
+
+  Future<void> _sendLeftStick(double x, double y) async {
+    final scaledX = (x * 1000).round().clamp(-1000, 1000);
+    final scaledY = (y * 1000).round().clamp(-1000, 1000);
+
+    await _udpClient.sendStickMove(x: scaledX, y: scaledY);
   }
 
   /// Helper method to update button state

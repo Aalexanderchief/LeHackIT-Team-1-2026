@@ -17,6 +17,7 @@ class ControllerProvider extends ChangeNotifier {
     final newState = _updateButtonInState(buttonId, isPressed);
     if (newState != null) {
       _state = newState;
+      _sendState();
       ControllerLogger.logButtonPress(buttonId, isPressed);
       notifyListeners();
     }
@@ -29,7 +30,7 @@ class ControllerProvider extends ChangeNotifier {
       leftStick: _state.leftStick.copyWith(x: clamped.$1, y: clamped.$2),
     );
 
-    _sendSticks();
+    _sendState();
 
     ControllerLogger.logStickMove('LEFT', x, y);
     notifyListeners();
@@ -41,7 +42,7 @@ class ControllerProvider extends ChangeNotifier {
     _state = _state.copyWith(
       rightStick: _state.rightStick.copyWith(x: clamped.$1, y: clamped.$2),
     );
-    _sendSticks();
+    _sendState();
     ControllerLogger.logStickMove('RIGHT', x, y);
     notifyListeners();
   }
@@ -51,6 +52,7 @@ class ControllerProvider extends ChangeNotifier {
     _state = _state.copyWith(
       leftTrigger: _state.leftTrigger.copyWith(value: value),
     );
+    _sendState();
     ControllerLogger.logTriggerEvent('LT', value);
     notifyListeners();
   }
@@ -60,6 +62,7 @@ class ControllerProvider extends ChangeNotifier {
     _state = _state.copyWith(
       rightTrigger: _state.rightTrigger.copyWith(value: value),
     );
+    _sendState();
     ControllerLogger.logTriggerEvent('RT', value);
     notifyListeners();
   }
@@ -67,7 +70,7 @@ class ControllerProvider extends ChangeNotifier {
   /// Reset all inputs
   void reset() {
     _state = ControllerState.initial();
-    _sendSticks();
+    _sendState();
     ControllerLogger.logReset();
     notifyListeners();
   }
@@ -78,20 +81,34 @@ class ControllerProvider extends ChangeNotifier {
     super.dispose();
   }
 
-  Future<void> _sendSticks() async {
+  Future<void> _sendState() async {
     final left = _state.leftStick.getNormalized();
     final right = _state.rightStick.getNormalized();
 
-    final scaledLeftX = (left.$1 * 1000).round().clamp(-1000, 1000);
-    final scaledLeftY = (left.$2 * 1000).round().clamp(-1000, 1000);
-    final scaledRightX = (right.$1 * 1000).round().clamp(-1000, 1000);
-    final scaledRightY = (right.$2 * 1000).round().clamp(-1000, 1000);
-
-    await _udpClient.sendStickMove(
-      x: scaledLeftX,
-      y: scaledLeftY,
-      rx: scaledRightX,
-      ry: scaledRightY,
+    await _udpClient.sendInputState(
+      lx: left.$1,
+      ly: left.$2,
+      rx: right.$1,
+      ry: right.$2,
+      lt: _state.leftTrigger.value,
+      rt: _state.rightTrigger.value,
+      buttons: {
+        'a': _state.buttonA.isPressed,
+        'b': _state.buttonB.isPressed,
+        'x': _state.buttonX.isPressed,
+        'y': _state.buttonY.isPressed,
+        'start': _state.buttonMenu.isPressed,
+        'back': _state.buttonView.isPressed,
+        'leftShoulder': _state.buttonLB.isPressed,
+        'rightShoulder': _state.buttonRB.isPressed,
+        'leftThumb': _state.leftStickPress.isPressed,
+        'rightThumb': _state.rightStickPress.isPressed,
+        'guide': _state.buttonHome.isPressed,
+        'dpadUp': _state.dPadUp.isPressed,
+        'dpadDown': _state.dPadDown.isPressed,
+        'dpadLeft': _state.dPadLeft.isPressed,
+        'dpadRight': _state.dPadRight.isPressed,
+      },
     );
   }
 

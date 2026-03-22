@@ -21,6 +21,12 @@ class _GamepadScreenState extends State<GamepadScreen> {
   String? _currentlyHeldButton; 
   String _hudMessage = "Voice Active. Say 'Hold L1'";
 
+  Future<void> _tapButton(String buttonId) async {
+    await inputService.sendButtonPress(buttonId);
+    await Future<void>.delayed(const Duration(milliseconds: 50));
+    await inputService.sendButtonRelease(buttonId);
+  }
+
   @override
   void initState() {
     super.initState();
@@ -137,7 +143,7 @@ class _GamepadScreenState extends State<GamepadScreen> {
                     children: [
                       IconButton(
                         icon: const Icon(Icons.copy, color: Colors.white54, size: 32),
-                        onPressed: () => inputService.sendButtonPress('SELECT'),
+                        onPressed: () => _tapButton('SELECT'),
                       ),
                       Container(
                         constraints: const BoxConstraints(minWidth: 200),
@@ -164,7 +170,7 @@ class _GamepadScreenState extends State<GamepadScreen> {
                       ),
                       IconButton(
                         icon: const Icon(Icons.menu, color: Colors.white54, size: 32),
-                        onPressed: () => inputService.sendButtonPress('START'),
+                        onPressed: () => _tapButton('START'),
                       ),
                     ],
                   ),

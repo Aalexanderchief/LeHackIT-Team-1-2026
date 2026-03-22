@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'dart:convert';
 import 'dart:io';
 
 class InputService {
@@ -13,8 +14,28 @@ class InputService {
   Future<void>? _initializing;
   bool _initFailedLogged = false;
 
-  int _leftX = 0;
-  int _leftY = 0;
+  double _lx = 0;
+  double _ly = 0;
+  double _rx = 0;
+  double _ry = 0;
+  double _lt = 0;
+  double _rt = 0;
+
+  bool _a = false;
+  bool _b = false;
+  bool _x = false;
+  bool _y = false;
+  bool _start = false;
+  bool _back = false;
+  bool _leftShoulder = false;
+  bool _rightShoulder = false;
+  bool _leftThumb = false;
+  bool _rightThumb = false;
+  bool _guide = false;
+  bool _dpadUp = false;
+  bool _dpadDown = false;
+  bool _dpadLeft = false;
+  bool _dpadRight = false;
 
   void connectToHost(String ipAddress) {
     final trimmed = ipAddress.trim();
@@ -30,32 +51,131 @@ class InputService {
     debugPrint('InputService target set to $_host:$_port');
   }
 
-  void sendButtonPress(String buttonId) {
-    final payload = '{"action": "press", "button": "$buttonId"}';
-    debugPrint("SENDING: $payload");
+  Future<void> sendButtonPress(String buttonId) async {
+    _applyButtonState(buttonId, true);
+    await _sendState();
   }
 
-  void sendButtonRelease(String buttonId) {
-    final payload = '{"action": "release", "button": "$buttonId"}';
-    debugPrint("SENDING: $payload");
+  Future<void> sendButtonRelease(String buttonId) async {
+    _applyButtonState(buttonId, false);
+    await _sendState();
   }
   
   Future<void> sendJoystickUpdate(String stickId, double x, double y) async {
-    final scaledX = (x.clamp(-1.0, 1.0) * 1000).round().clamp(-1000, 1000);
-    final scaledY = (y.clamp(-1.0, 1.0) * 1000).round().clamp(-1000, 1000);
+    final normalizedX = x.clamp(-1.0, 1.0);
+    final normalizedY = y.clamp(-1.0, 1.0);
 
     if (stickId.toUpperCase() == 'LEFT') {
-      _leftX = scaledX;
-      _leftY = scaledY;
+      _lx = normalizedX;
+      _ly = normalizedY;
+    } else if (stickId.toUpperCase() == 'RIGHT') {
+      _rx = normalizedX;
+      _ry = normalizedY;
     }
 
+    await _sendState();
+  }
+
+  void _applyButtonState(String buttonId, bool pressed) {
+    switch (buttonId.toUpperCase()) {
+      case 'A':
+        _a = pressed;
+        break;
+      case 'B':
+        _b = pressed;
+        break;
+      case 'X':
+        _x = pressed;
+        break;
+      case 'Y':
+        _y = pressed;
+        break;
+      case 'START':
+        _start = pressed;
+        break;
+      case 'SELECT':
+      case 'BACK':
+        _back = pressed;
+        break;
+      case 'L1':
+      case 'LEFT_SHOULDER':
+        _leftShoulder = pressed;
+        break;
+      case 'R1':
+      case 'RIGHT_SHOULDER':
+        _rightShoulder = pressed;
+        break;
+      case 'L2':
+      case 'LEFT_TRIGGER':
+        _lt = pressed ? 1.0 : 0.0;
+        break;
+      case 'R2':
+      case 'RIGHT_TRIGGER':
+        _rt = pressed ? 1.0 : 0.0;
+        break;
+      case 'L3':
+      case 'LEFT_THUMB':
+        _leftThumb = pressed;
+        break;
+      case 'R3':
+      case 'RIGHT_THUMB':
+        _rightThumb = pressed;
+        break;
+      case 'GUIDE':
+      case 'HOME':
+        _guide = pressed;
+        break;
+      case 'DPAD_UP':
+        _dpadUp = pressed;
+        break;
+      case 'DPAD_DOWN':
+        _dpadDown = pressed;
+        break;
+      case 'DPAD_LEFT':
+        _dpadLeft = pressed;
+        break;
+      case 'DPAD_RIGHT':
+        _dpadRight = pressed;
+        break;
+      default:
+        debugPrint('Unknown buttonId "$buttonId"');
+        break;
+    }
+  }
+
+  Future<void> _sendState() async {
     if (!await _ensureReady()) {
       return;
     }
 
-    // Current backend schema consumes left stick fields x/y.
-    final payload = _encodeStickMove(x: _leftX, y: _leftY);
-    _socket!.send(payload, _address!, _port);
+    final payload = jsonEncode({
+      'type': 'INPUT_STATE',
+      'lx': _lx,
+      'ly': _ly,
+      'rx': _rx,
+      'ry': _ry,
+      'lt': _lt,
+      'rt': _rt,
+      'buttons': {
+        'a': _a,
+        'b': _b,
+        'x': _x,
+        'y': _y,
+        'start': _start,
+        'back': _back,
+        'leftShoulder': _leftShoulder,
+        'rightShoulder': _rightShoulder,
+        'leftThumb': _leftThumb,
+        'rightThumb': _rightThumb,
+        'guide': _guide,
+        'dpadUp': _dpadUp,
+        'dpadDown': _dpadDown,
+        'dpadLeft': _dpadLeft,
+        'dpadRight': _dpadRight,
+      }
+    });
+
+    _socket!.send(utf8.encode(payload), _address!, _port);
   }
 
   Future<bool> _ensureReady() async {
@@ -87,28 +207,4 @@ class InputService {
     }
   }
 
-  List<int> _encodeStickMove({required int x, required int y}) {
-    return <int>[
-      0x08,
-      ..._encodeInt32Varint(x),
-      0x10,
-      ..._encodeInt32Varint(y),
-    ];
-  }
-
-  List<int> _encodeInt32Varint(int value) {
-    final normalized = value < 0 ? (value & 0xFFFFFFFFFFFFFFFF) : value;
-    return _encodeVarint(normalized);
-  }
-
-  List<int> _encodeVarint(int value) {
-    var current = value;
-    final bytes = <int>[];
-    while (current > 0x7F) {
-      bytes.add((current & 0x7F) | 0x80);
-      current = current >> 7;
-    }
-    bytes.add(current & 0x7F);
-    return bytes;
-  }
 }

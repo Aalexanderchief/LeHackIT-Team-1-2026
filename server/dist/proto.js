@@ -26,6 +26,16 @@ function toNumber(value, fallback = 0) {
 function toBoolean(value, fallback = false) {
     return typeof value === "boolean" ? value : fallback;
 }
+function readBooleanKeys(containers, keys) {
+    for (const container of containers) {
+        for (const key of keys) {
+            if (key in container) {
+                return toBoolean(container[key]);
+            }
+        }
+    }
+    return false;
+}
 function emptyInputState() {
     return {
         lx: 0,
@@ -60,27 +70,28 @@ function fromJsonPayload(payload) {
     const buttons = typeof source.buttons === "object" && source.buttons !== null
         ? source.buttons
         : {};
+    const containers = [buttons, source];
     state.lx = clamp(toNumber(source.lx), -1, 1);
     state.ly = clamp(toNumber(source.ly), -1, 1);
     state.rx = clamp(toNumber(source.rx), -1, 1);
     state.ry = clamp(toNumber(source.ry), -1, 1);
     state.leftTrigger = clamp(toNumber(source.lt, toNumber(source.leftTrigger)), 0, 1);
     state.rightTrigger = clamp(toNumber(source.rt, toNumber(source.rightTrigger)), 0, 1);
-    state.a = toBoolean(buttons.a);
-    state.b = toBoolean(buttons.b);
-    state.x = toBoolean(buttons.x);
-    state.y = toBoolean(buttons.y);
-    state.start = toBoolean(buttons.start);
-    state.back = toBoolean(buttons.back);
-    state.leftShoulder = toBoolean(buttons.leftShoulder);
-    state.rightShoulder = toBoolean(buttons.rightShoulder);
-    state.leftThumb = toBoolean(buttons.leftThumb);
-    state.rightThumb = toBoolean(buttons.rightThumb);
-    state.guide = toBoolean(buttons.guide);
-    state.dpadUp = toBoolean(buttons.dpadUp);
-    state.dpadDown = toBoolean(buttons.dpadDown);
-    state.dpadLeft = toBoolean(buttons.dpadLeft);
-    state.dpadRight = toBoolean(buttons.dpadRight);
+    state.a = readBooleanKeys(containers, ["a", "A"]);
+    state.b = readBooleanKeys(containers, ["b", "B"]);
+    state.x = readBooleanKeys(containers, ["x", "X"]);
+    state.y = readBooleanKeys(containers, ["y", "Y"]);
+    state.start = readBooleanKeys(containers, ["start", "START", "menu", "Menu"]);
+    state.back = readBooleanKeys(containers, ["back", "BACK", "view", "View", "select", "SELECT"]);
+    state.leftShoulder = readBooleanKeys(containers, ["leftShoulder", "LEFT_SHOULDER", "lb", "LB", "l1", "L1"]);
+    state.rightShoulder = readBooleanKeys(containers, ["rightShoulder", "RIGHT_SHOULDER", "rb", "RB", "r1", "R1"]);
+    state.leftThumb = readBooleanKeys(containers, ["leftThumb", "LEFT_THUMB", "l3", "L3", "leftStickPress", "LSP"]);
+    state.rightThumb = readBooleanKeys(containers, ["rightThumb", "RIGHT_THUMB", "r3", "R3", "rightStickPress", "RSP"]);
+    state.guide = readBooleanKeys(containers, ["guide", "GUIDE", "home", "Home"]);
+    state.dpadUp = readBooleanKeys(containers, ["dpadUp", "DPAD_UP", "du", "DU"]);
+    state.dpadDown = readBooleanKeys(containers, ["dpadDown", "DPAD_DOWN", "dd", "DD"]);
+    state.dpadLeft = readBooleanKeys(containers, ["dpadLeft", "DPAD_LEFT", "dl", "DL"]);
+    state.dpadRight = readBooleanKeys(containers, ["dpadRight", "DPAD_RIGHT", "dr", "DR"]);
     return state;
 }
 function fromStickMove(move) {

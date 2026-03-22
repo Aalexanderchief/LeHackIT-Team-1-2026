@@ -1,8 +1,5 @@
 import type { InputState } from "./types";
 
-const XINPUT_AXIS_MAX = 32767;
-const XINPUT_TRIGGER_MAX = 255;
-
 let ClientCtor: any;
 
 try {
@@ -17,6 +14,8 @@ export class ViGEmBridge {
   private client: any;
   private gamepad: any;
   private connected = false;
+  private updateCount = 0;
+  private readonly debugRaw = process.env.DEBUG_VIGEM_RAW === "1";
 
   connect(): void {
     if (!ClientCtor) {
@@ -28,6 +27,7 @@ export class ViGEmBridge {
       this.client = new ClientCtor();
       this.client.connect();
       this.gamepad = this.client.createX360Controller();
+      this.gamepad.updateMode = "manual";
       this.gamepad.connect();
       this.connected = true;
       console.info("[vigem] virtual Xbox controller connected");
@@ -67,30 +67,19 @@ export class ViGEmBridge {
     }
 
     try {
-      this.setAxis(
-        ["axis", "leftX"],
-        Math.round(this.clamp(input.lx, -1, 1) * XINPUT_AXIS_MAX)
-      );
-      this.setAxis(
-        ["axis", "leftY"],
-        Math.round(this.clamp(input.ly, -1, 1) * XINPUT_AXIS_MAX)
-      );
-      this.setAxis(
-        ["axis", "rightX"],
-        Math.round(this.clamp(input.rx, -1, 1) * XINPUT_AXIS_MAX)
-      );
-      this.setAxis(
-        ["axis", "rightY"],
-        Math.round(this.clamp(input.ry, -1, 1) * XINPUT_AXIS_MAX)
-      );
-      this.setAxis(
-        ["axis", "leftTrigger"],
-        Math.round(this.clamp(input.leftTrigger, 0, 1) * XINPUT_TRIGGER_MAX)
-      );
-      this.setAxis(
-        ["axis", "rightTrigger"],
-        Math.round(this.clamp(input.rightTrigger, 0, 1) * XINPUT_TRIGGER_MAX)
-      );
+      // vigemclient InputAxis expects normalized input ranges:
+      // sticks [-1..1], triggers [0..1], dpad axes {-1,0,1}.
+      this.setAxis(["axis", "leftX"], this.clamp(input.lx, -1, 1));
+      this.setAxis(["axis", "leftY"], this.clamp(input.ly, -1, 1));
+      this.setAxis(["axis", "rightX"], this.clamp(input.rx, -1, 1));
+      this.setAxis(["axis", "rightY"], this.clamp(input.ry, -1, 1));
+      this.setAxis(["axis", "leftTrigger"], this.clamp(input.leftTrigger, 0, 1));
+      this.setAxis(["axis", "rightTrigger"], this.clamp(input.rightTrigger, 0, 1));
+
+      const dpadHorz = (input.dpadRight ? 1 : 0) + (input.dpadLeft ? -1 : 0);
+      const dpadVert = (input.dpadUp ? 1 : 0) + (input.dpadDown ? -1 : 0);
+      this.setAxis(["axis", "dpadHorz"], dpadHorz);
+      this.setAxis(["axis", "dpadVert"], dpadVert);
 
       this.setButton(["button", "A"], input.a);
       this.setButton(["button", "B"], input.b);
@@ -103,10 +92,23 @@ export class ViGEmBridge {
       this.setButton(["button", "LEFT_THUMB"], input.leftThumb);
       this.setButton(["button", "RIGHT_THUMB"], input.rightThumb);
       this.setButton(["button", "GUIDE"], input.guide);
-      this.setButton(["button", "DPAD_UP"], input.dpadUp);
-      this.setButton(["button", "DPAD_DOWN"], input.dpadDown);
-      this.setButton(["button", "DPAD_LEFT"], input.dpadLeft);
-      this.setButton(["button", "DPAD_RIGHT"], input.dpadRight);
+
+      if (this.debugRaw) {
+        this.updateCount += 1;
+        if (this.updateCount % 20 === 0) {
+          const lxRaw = this.gamepad?.axis?.leftX?.valueRaw;
+          const lyRaw = this.gamepad?.axis?.leftY?.valueRaw;
+          const rxRaw = this.gamepad?.axis?.rightX?.valueRaw;
+          const ryRaw = this.gamepad?.axis?.rightY?.valueRaw;
+          const ltRaw = this.gamepad?.axis?.leftTrigger?.valueRaw;
+          const rtRaw = this.gamepad?.axis?.rightTrigger?.valueRaw;
+          const dpadHRaw = this.gamepad?.axis?.dpadHorz?.valueRaw;
+          const dpadVRaw = this.gamepad?.axis?.dpadVert?.valueRaw;
+          console.info(
+            `[vigem-raw] lx=${lxRaw} ly=${lyRaw} rx=${rxRaw} ry=${ryRaw} lt=${ltRaw} rt=${rtRaw} dpad=(${dpadHRaw},${dpadVRaw})`
+          );
+        }
+      }
 
       this.gamepad.update();
     } catch (error) {

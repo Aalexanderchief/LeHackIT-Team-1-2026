@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
@@ -18,18 +19,31 @@ class UdpStickClient {
   Future<void>? _initializing;
   bool _initFailedLogged = false;
 
-  Future<void> sendStickMove({
-    required int x,
-    required int y,
-    required int rx,
-    required int ry,
+  Future<void> sendInputState({
+    required double lx,
+    required double ly,
+    required double rx,
+    required double ry,
+    required double lt,
+    required double rt,
+    required Map<String, bool> buttons,
   }) async {
     if (!await _ensureReady()) {
       return;
     }
 
-    final payload = _encodeStickMove(x: x, y: y, rx: rx, ry: ry);
-    _socket!.send(payload, _address!, _port);
+    final payload = jsonEncode({
+      'type': 'INPUT_STATE',
+      'lx': lx.clamp(-1.0, 1.0),
+      'ly': ly.clamp(-1.0, 1.0),
+      'rx': rx.clamp(-1.0, 1.0),
+      'ry': ry.clamp(-1.0, 1.0),
+      'lt': lt.clamp(0.0, 1.0),
+      'rt': rt.clamp(0.0, 1.0),
+      'buttons': buttons,
+    });
+
+    _socket!.send(utf8.encode(payload), _address!, _port);
   }
 
   void dispose() {
@@ -68,39 +82,4 @@ class UdpStickClient {
     }
   }
 
-  List<int> _encodeStickMove({
-    required int x,
-    required int y,
-    required int rx,
-    required int ry,
-  }) {
-    return <int>[
-      0x08,
-      ..._encodeInt32Varint(x),
-      0x10,
-      ..._encodeInt32Varint(y),
-      0x18,
-      ..._encodeInt32Varint(rx),
-      0x20,
-      ..._encodeInt32Varint(ry),
-    ];
-  }
-
-  List<int> _encodeInt32Varint(int value) {
-    final normalized = value < 0 ? (value & 0xFFFFFFFFFFFFFFFF) : value;
-    return _encodeVarint(normalized);
-  }
-
-  List<int> _encodeVarint(int value) {
-    var current = value;
-    final bytes = <int>[];
-
-    while (current > 0x7F) {
-      bytes.add((current & 0x7F) | 0x80);
-      current = current >> 7;
-    }
-
-    bytes.add(current & 0x7F);
-    return bytes;
-  }
 }

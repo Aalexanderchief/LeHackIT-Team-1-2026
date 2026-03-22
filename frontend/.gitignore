@@ -1,0 +1,121 @@
+# Miscellaneous
+*.class
+*.log
+*.pyc
+*.swp
+*.swo
+*~
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+.atom/
+.build/
+.buildlog/
+.history
+.svn/
+.swiftpm/
+migrate_working_dir/
+
+# IDE & Editor related
+*.iml
+*.ipr
+*.iws
+.idea/
+.vscode/
+*.sublime-workspace
+*.sublime-project
+*.code-workspace
+
+# Flutter/Dart/Pub related
+**/doc/api/
+**/ios/Flutter/.last_build_id
+**/ios/Flutter/Flutter.podspec
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.pub-cache/
+.pub/
+/build/
+/coverage/
+pubspec.lock
+
+# Symbolication related
+app.*.symbols
+
+# Obfuscation related
+app.*.map.json
+
+# Android Studio will place build artifacts here
+/android/app/debug
+/android/app/profile
+/android/app/release
+/android/.gradle
+/android/build/
+/android/.gradle/
+/android/local.properties
+/android/.idea/
+/android/captures/
+
+# iOS/macOS related
+**/ios/Pods/
+**/ios/Podfile.lock
+**/ios/.symlinks/
+**/ios/Flutter/Flutter.framework
+**/ios/Flutter/Flutter.podspec
+**/macos/Pods/
+**/macos/Podfile.lock
+**/macos/.symlinks/
+**/macos/Flutter/Flutter.framework
+**/macos/Flutter/Flutter.podspec
+
+# Web related
+/web/packages
+
+# Windows related
+windows/flutter/generated_plugins.cmake
+windows/flutter/generated_*.cmake
+windows/flutter/generated_plugin_registry.cpp
+windows/.vs/
+windows/out/
+
+# Linux related
+linux/flutter/generated_plugins.cmake
+linux/flutter/generated_*.cmake
+linux/flutter/generated_plugin_registry.cc
+
+# Environment & Configuration
+.env
+.env.local
+.env.*.local
+.DS_Store
+
+# Docker related
+.dockerignore
+docker-compose.override.yml
+
+# Generated files
+*.g.dart
+*.config.dart
+*.freezed.dart
+*.chopper.dart
+
+# OS specific
+.vscode/settings.json
+.vscode/launch.json
+.vscode/extensions.json
+
+node_modules/
+server/node_modules/
+server/dist/
+server/coverage/
+mobile/.dart_tool/
+mobile/.packages
+mobile/build/
+mobile/.flutter-plugins
+mobile/.flutter-plugins-dependencies
+mobile/.metadata
+*.log
